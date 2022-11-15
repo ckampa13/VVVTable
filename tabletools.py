@@ -16,6 +16,7 @@ def is_good_process_name(name):
             "QCD",
             "W",
             "Z",
+            "top",
             "1top",
             "ttbar",
             "diboson",
@@ -33,6 +34,11 @@ def is_good_process_name(name):
             "ZZZ",
             "Bkg",
             "Sig",
+            "SMWWW",
+            "SMWWZ",
+            "SMWZZ",
+            "SMZZZ",
+            "SMSig",
             ]
     is_good = name in good_process_names
     return is_good
@@ -126,6 +132,8 @@ def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TA
         if col == "Bkg":
             colstyles.append("c|")
         elif col == "Sig":
+            colstyles.append("|c")
+        elif col == "SMSig":
             colstyles.append("|c")
         else:
             colstyles.append("c")
