@@ -5,12 +5,6 @@ import glob
 import sys
 import argparse
 
-def get_table_types():
-    table_types = ["SRMCYield",
-                   # "CRMCYield", # TODO
-                  ]
-    return table_types
-
 def is_good_process_name(name):
     good_process_names = [
             "QCD",
@@ -72,16 +66,22 @@ def check_csv_integrity(csv):
     if headers[0] != "Bin":
         print("First column header must be 'Bin'!")
         sys.exit(1)
-    procs = headers[1::2]
-    procerrs = headers[2::2]
+    procs = headers[1::3]
+    procerrsUp = headers[2::3]
+    procerrsDown = headers[3::3]
     for proc in procs:
         if not is_good_process_name(proc):
             print("{} is not a good process name!".format(proc))
             sys.exit(1)
-    for procerr in procerrs:
-        procstripped = procerr.replace("err", "")
+    for procerr in procerrsUp:
+        procstripped = procerr.replace("errUp", "")
         if not is_good_process_name(procstripped):
-            print("{}err is not a good process error name!".format(procstripped))
+            print("{}errUp is not a good process error name!".format(procstripped))
+            sys.exit(1)
+    for procerr in procerrsDown:
+        procstripped = procerr.replace("errDown", "")
+        if not is_good_process_name(procstripped):
+            print("{}errDown is not a good process error name!".format(procstripped))
             sys.exit(1)
 
     # Checking Contents
@@ -102,9 +102,10 @@ class VVVCSV:
         self.f = open(self.csvfilepath)
         self.reader = csv.reader(self.f)
         self.values = list(self.reader)
-        self.cols = [ col.strip() for col in self.values[0][1::2] ]
-        self.yields = [ [ float(y) for y in line[1::2] ] for line in self.values[1:] ]
-        self.errors = [ [ float(e) for e in line[2::2] ] for line in self.values[1:] ]
+        self.cols = [ col.strip() for col in self.values[0][1::3] ]
+        self.yields = [ [ float(y) for y in line[1::3] ] for line in self.values[1:] ]
+        self.errorsUp = [ [ float(e) for e in line[2::3] ] for line in self.values[1:] ]
+        self.errorsDown = [ [ float(e) for e in line[3::3] ] for line in self.values[1:] ]
 
     def nrows(self):
         return len(self.yields)
@@ -156,9 +157,10 @@ def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TA
     # Process rows
 
     for irow in range(vvvcsv.nrows()):
-        rowcontents = [bin_desc[irow+1]]
-        for y, e in zip(vvvcsv.yields[irow], vvvcsv.errors[irow]):
-            rowcontents.append("${} \\pm {}$".format(y, e))
+        rowcontents = ["\\pbox{20cm}{ ~ \\\\"+bin_desc[irow+1]+"\\\\ }"]
+        for y, eu, ed in zip(vvvcsv.yields[irow], vvvcsv.errorsUp[irow], vvvcsv.errorsDown[irow]):
+            # print(eu, ed)
+            rowcontents.append(f"${y}  ^{{+{eu}}}_{{-{ed}}}$")
         content_lines.append("    " + " & ".join(rowcontents) + "\\\\\n")
     rtnstr += "    \\hline\n".join(content_lines)
 

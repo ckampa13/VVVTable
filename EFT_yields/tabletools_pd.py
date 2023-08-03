@@ -43,9 +43,7 @@ class VVV_TeXTable_PD(object):
         else:
             raise ValueError('Input table file must be either CSV (.csv) or pickle (.pkl).')
 
-    def coerce_df_to_csv(self, channel, subchannel, statonly=True):
-        if not statonly:
-            raise NotImplementedError("Oops! Need to implement table with systematics still.")
+    def coerce_df_to_csv(self, channel, subchannel):
         coerced_dict = {'Bin':[]}
         self.bin_desc = ['Bin [GeV]', 'Inclusive',]
         # print(self.df.channel.unique())
@@ -58,7 +56,7 @@ class VVV_TeXTable_PD(object):
         procs = [p for p in df1.process]
         # print(procs)
         cols_all = ['Bin']
-        for p in procs:
+        for p in procs + ['Bkg']:
             coerced_dict[f'{p}'] = []
             coerced_dict[f'{p}err'] = []
             cols_all.append(f'{p}')
@@ -68,9 +66,15 @@ class VVV_TeXTable_PD(object):
         for p in procs:
             dfp = df_.query(f'process=="{p}"')
             val = dfp[f'yield'].sum()
-            err = np.sum(dfp[f'MCstat'].values**2)**(1/2)
+            err = (np.sum(dfp[f'MCstat'].values**2))**(1/2)
             coerced_dict[f'{p}'].append(f'{val:0.2f}')
             coerced_dict[f'{p}err'].append(f'{err:0.2f}')
+        # total background
+        dfp = df_
+        val = dfp['yield'].sum()
+        err = (np.sum(dfp['MCstat'].values**2))**(1/2)
+        coerced_dict[f'Bkg'].append(f'{val:0.2f}')
+        coerced_dict[f'Bkgerr'].append(f'{err:0.2f}')
         # loop through each bin
         for bin_ in df_.bin.unique():
             df0 = df_.query(f'bin == {bin_}')
@@ -85,11 +89,99 @@ class VVV_TeXTable_PD(object):
                 err = dfp[f'MCstat']
                 coerced_dict[f'{p}'].append(f'{val:0.2f}')
                 coerced_dict[f'{p}err'].append(f'{err:0.2f}')
+            # get Bkg for that bin
+            dfp = df0
+            val = dfp['yield'].sum()
+            err = (np.sum(dfp['MCstat'].values**2))**(1/2)
+            coerced_dict[f'Bkg'].append(f'{val:0.2f}')
+            coerced_dict[f'Bkgerr'].append(f'{err:0.2f}')
+        # update final bin to be overflow
+        temp = self.bin_desc[-1].split('-')[0]
+        self.bin_desc[-1] = f'{temp}-$'
         # print(coerced_dict)
         df_coerced = pd.DataFrame(coerced_dict)
         # print(df_coerced)
         df_coerced = df_coerced[cols_all]
+        # substitute any column names
+        column_subs = {'sm': 'SMVVV', 'smerr': 'SMVVVerr'}
+        df_coerced.rename(columns=column_subs, inplace=True)
+        # save to temporary csv
         df_coerced.to_csv(os.path.join(ddir,'temp.csv'), index=False)
+
+    def coerce_df_to_csv_syst(self, channel, subchannel):
+        coerced_dict = {'Bin':[]}
+        self.bin_desc = ['Bin [GeV]', 'Inclusive',]
+        # print(self.df.channel.unique())
+        # print(self.df.subchannel.unique())
+        df_ = self.df.query(f'channel=="{channel}" and subchannel=="{subchannel}"')
+        # print(df_)
+        # grab the process names
+        # print(df_.process.unique())
+        df1 = df_.query('bin == 1')
+        procs = [p for p in df1.process]
+        # print(procs)
+        cols_all = ['Bin']
+        for p in procs + ['Bkg']:
+            coerced_dict[f'{p}'] = []
+            coerced_dict[f'{p}errUp'] = []
+            coerced_dict[f'{p}errDown'] = []
+            cols_all.append(f'{p}')
+            cols_all.append(f'{p}errUp')
+            cols_all.append(f'{p}errDown')
+        # make the inclusive row
+        coerced_dict['Bin'].append(1)
+        for p in procs:
+            dfp = df_.query(f'process=="{p}"')
+            val = dfp[f'yield'].sum()
+            errUp = (np.sum(dfp[f'syst_quadrature_Up'].values**2))**(1/2)
+            errDown = (np.sum(dfp[f'syst_quadrature_Down'].values**2))**(1/2)
+            coerced_dict[f'{p}'].append(f'{val:0.2f}')
+            coerced_dict[f'{p}errUp'].append(f'{errUp:0.2f}')
+            coerced_dict[f'{p}errDown'].append(f'{errDown:0.2f}')
+        # total background
+        dfp = df_
+        val = dfp['yield'].sum()
+        errUp = (np.sum(dfp['syst_quadrature_Up'].values**2))**(1/2)
+        errDown = (np.sum(dfp['syst_quadrature_Down'].values**2))**(1/2)
+        coerced_dict[f'Bkg'].append(f'{val:0.2f}')
+        coerced_dict[f'BkgerrUp'].append(f'{errUp:0.2f}')
+        coerced_dict[f'BkgerrDown'].append(f'{errDown:0.2f}')
+        # loop through each bin
+        for bin_ in df_.bin.unique():
+            df0 = df_.query(f'bin == {bin_}')
+            binlo = df0.iloc[0].bin_low
+            binhi = df0.iloc[0].bin_high
+            self.bin_desc.append(f'${binlo:0.1f}-{binhi:0.1f}$')
+            i = bin_ + 1
+            coerced_dict['Bin'].append(i)
+            for p in procs:
+                dfp = df0.query(f'process=="{p}"').iloc[0]
+                val = dfp[f'yield']
+                errUp = dfp[f'syst_quadrature_Up']
+                errDown = dfp[f'syst_quadrature_Down']
+                coerced_dict[f'{p}'].append(f'{val:0.2f}')
+                coerced_dict[f'{p}errUp'].append(f'{errUp:0.2f}')
+                coerced_dict[f'{p}errDown'].append(f'{errDown:0.2f}')
+            # get Bkg for that bin
+            dfp = df0
+            val = dfp['yield'].sum()
+            errUp = (np.sum(dfp['syst_quadrature_Up'].values**2))**(1/2)
+            errDown = (np.sum(dfp['syst_quadrature_Down'].values**2))**(1/2)
+            coerced_dict[f'Bkg'].append(f'{val:0.2f}')
+            coerced_dict[f'BkgerrUp'].append(f'{errUp:0.2f}')
+            coerced_dict[f'BkgerrDown'].append(f'{errDown:0.2f}')
+        # update final bin to be overflow
+        temp = self.bin_desc[-1].split('-')[0]
+        self.bin_desc[-1] = f'{temp}-$'
+        # print(coerced_dict)
+        df_coerced = pd.DataFrame(coerced_dict)
+        # print(df_coerced)
+        df_coerced = df_coerced[cols_all]
+        # substitute any column names
+        column_subs = {'sm': 'SMVVV', 'smerrUp': 'SMVVVerrUp', 'smerrDown': 'SMVVVerrDown'}
+        df_coerced.rename(columns=column_subs, inplace=True)
+        # save to temporary csv
+        df_coerced.to_csv(os.path.join(ddir,'temp_syst.csv'), index=False)
 
     '''
     def make_table(self, method, caption='This is a caption.', label='tab:atable'):
