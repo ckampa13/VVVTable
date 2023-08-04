@@ -140,7 +140,8 @@ class VVVCSV:
                 ind = col_dict['ind']
                 # loop through rows
                 for line in self.values[1:]:
-                    val = float(line[ind])
+                    #val = float(line[ind])
+                    val = line[ind].strip()
                     col_dict['values'].append(val)
 
         # print(f'cols: {self.cols}')

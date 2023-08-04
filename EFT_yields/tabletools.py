@@ -103,8 +103,8 @@ class VVVCSV:
         self.reader = csv.reader(self.f)
         self.values = list(self.reader)
         self.cols = [ col.strip() for col in self.values[0][1::2] ]
-        self.yields = [ [ float(y) for y in line[1::2] ] for line in self.values[1:] ]
-        self.errors = [ [ float(e) for e in line[2::2] ] for line in self.values[1:] ]
+        self.yields = [ [ y.strip() for y in line[1::2] ] for line in self.values[1:] ]
+        self.errors = [ [ e.strip() for e in line[2::2] ] for line in self.values[1:] ]
 
     def nrows(self):
         return len(self.yields)

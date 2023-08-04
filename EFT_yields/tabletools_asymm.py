@@ -103,9 +103,9 @@ class VVVCSV:
         self.reader = csv.reader(self.f)
         self.values = list(self.reader)
         self.cols = [ col.strip() for col in self.values[0][1::3] ]
-        self.yields = [ [ float(y) for y in line[1::3] ] for line in self.values[1:] ]
-        self.errorsUp = [ [ float(e) for e in line[2::3] ] for line in self.values[1:] ]
-        self.errorsDown = [ [ float(e) for e in line[3::3] ] for line in self.values[1:] ]
+        self.yields = [ [ y.strip() for y in line[1::3] ] for line in self.values[1:] ]
+        self.errorsUp = [ [ e.strip() for e in line[2::3] ] for line in self.values[1:] ]
+        self.errorsDown = [ [ e.strip() for e in line[3::3] ] for line in self.values[1:] ]
 
     def nrows(self):
         return len(self.yields)

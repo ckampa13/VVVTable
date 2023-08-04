@@ -1,4 +1,4 @@
-def make_main_tex(mainfile, channel_file_list, channel_file_list_syst, channel_file_list_signal, subsection_list):
+def make_main_tex(mainfile, channel_file_list, channel_file_list_syst, channel_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict):
     text = '''\\documentclass[landscape, 12pt,letterpaper]{article}
 \\usepackage[margin=0.5in]{geometry}
 \\usepackage[utf8]{inputenc}
@@ -31,10 +31,20 @@ def make_main_tex(mainfile, channel_file_list, channel_file_list_syst, channel_f
     # add signal section
     text += '\\section{Signal Tables}\n'
 
-    for chan_signal, subsec in zip(channel_file_list_signal, subsection_list):
+    #for chan_signal, subsec in zip(channel_file_list_signal, subsection_list):
+    for subsec in subsection_list:
+        WCs_avail = subsection_signal_dict[subsec]
         text += f'\\subsection{{{subsec}}}\n'
-        text += f"\\input{{{chan_signal}}}\n"
-        # do I need a new page here?
+        i = 0
+        for WC in WCs:
+            if WC in WCs_avail:
+                i += 1
+                chan_signal = channel_file_list_signal_dict[WC][subsec]
+                text += f'\\subsubsection{{{WC}}}\n'
+                text += f"\\input{{{chan_signal}}}\n\n"
+                # if i % 2 == 0:
+                #     text += '\\newpage\n\n'
+                text += '\\newpage\n\n'
         text += '\\newpage\n\n'
 
     text += '\n\n'
