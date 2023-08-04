@@ -115,8 +115,7 @@ class VVVCSV:
 def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TAB:SOMETHING", needs_resizebox=False):
 
     # Latex header for the table
-    rtnstr = '''
-\\begin{table}[!htbp]
+    rtnstr = '''\\begin{table}[!htbp]
     \\small
     \\center
     '''
@@ -169,8 +168,7 @@ def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TA
     \\caption{{{}}}
     \\label{{{}}}
 \\end{{table}}
-'''.format(caption, label
-)
+'''.format(caption, label)
 
     return rtnstr
 

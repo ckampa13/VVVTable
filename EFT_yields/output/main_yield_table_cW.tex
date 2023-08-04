@@ -1,15 +1,22 @@
-
 \documentclass[landscape, 12pt,letterpaper]{article}
 \usepackage[margin=0.5in]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{rotating}
 \usepackage{pbox}
 
+\title{CMS VVV Yield Tables\\EFT Analysis}
+\author{}
+\date{\today}
+
 \begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
 
 % Adding tables for each channel
 \section{Background Tables}
-
 \subsection{0Lepton2FJ }
 \input{yield_table_cW.default.0Lepton_2FJ.tex}
 \input{yield_table_cW.default_syst.0Lepton_2FJ.tex}
@@ -44,6 +51,38 @@
 \input{yield_table_cW.default.2Lepton_SS1FJ.tex}
 \input{yield_table_cW.default_syst.2Lepton_SS1FJ.tex}
 \newpage
+
+
+
+\section{Signal Tables}
+\subsection{0Lepton2FJ }
+\input{yield_table_cW.default_signal.0Lepton_2FJ.tex}
+\newpage
+
+\subsection{0Lepton3FJ }
+\input{yield_table_cW.default_signal.0Lepton_3FJ.tex}
+\newpage
+
+\subsection{1Lepton }
+\input{yield_table_cW.default_signal.1Lepton.tex}
+\newpage
+
+\subsection{2LeptonOS OF}
+\input{yield_table_cW.default_signal.2Lepton_OSOF.tex}
+\newpage
+
+\subsection{2LeptonOS SFnoZ}
+\input{yield_table_cW.default_signal.2Lepton_OSSFnoZ.tex}
+\newpage
+
+\subsection{2LeptonOS SFZ}
+\input{yield_table_cW.default_signal.2Lepton_OSSFZ.tex}
+\newpage
+
+\subsection{2LeptonSS 1FJ}
+\input{yield_table_cW.default_signal.2Lepton_SS1FJ.tex}
+\newpage
+
 
 
 \end{document}

@@ -5,6 +5,7 @@ import glob
 import sys
 import argparse
 
+'''
 def is_good_process_name(name):
     good_process_names = [
             "QCD",
@@ -49,6 +50,7 @@ def is_good_process_name(name):
             ]
     is_good = name in good_process_names
     return is_good
+'''
 
 def isfloat(num):
     try:
@@ -66,23 +68,23 @@ def check_csv_integrity(csv):
     if headers[0] != "Bin":
         print("First column header must be 'Bin'!")
         sys.exit(1)
-    procs = headers[1::3]
-    procerrsUp = headers[2::3]
-    procerrsDown = headers[3::3]
-    for proc in procs:
-        if not is_good_process_name(proc):
-            print("{} is not a good process name!".format(proc))
-            sys.exit(1)
-    for procerr in procerrsUp:
-        procstripped = procerr.replace("errUp", "")
-        if not is_good_process_name(procstripped):
-            print("{}errUp is not a good process error name!".format(procstripped))
-            sys.exit(1)
-    for procerr in procerrsDown:
-        procstripped = procerr.replace("errDown", "")
-        if not is_good_process_name(procstripped):
-            print("{}errDown is not a good process error name!".format(procstripped))
-            sys.exit(1)
+    # procs = headers[1::3]
+    # procerrsUp = headers[2::3]
+    # procerrsDown = headers[3::3]
+    # for proc in procs:
+    #     if not is_good_process_name(proc):
+    #         print("{} is not a good process name!".format(proc))
+    #         sys.exit(1)
+    # for procerr in procerrsUp:
+    #     procstripped = procerr.replace("errUp", "")
+    #     if not is_good_process_name(procstripped):
+    #         print("{}errUp is not a good process error name!".format(procstripped))
+    #         sys.exit(1)
+    # for procerr in procerrsDown:
+    #     procstripped = procerr.replace("errDown", "")
+    #     if not is_good_process_name(procstripped):
+    #         print("{}errDown is not a good process error name!".format(procstripped))
+    #         sys.exit(1)
 
     # Checking Contents
     for line in lines[1:]:
@@ -102,16 +104,57 @@ class VVVCSV:
         self.f = open(self.csvfilepath)
         self.reader = csv.reader(self.f)
         self.values = list(self.reader)
-        self.cols = [ col.strip() for col in self.values[0][1::3] ]
-        self.yields = [ [ float(y) for y in line[1::3] ] for line in self.values[1:] ]
-        self.errorsUp = [ [ float(e) for e in line[2::3] ] for line in self.values[1:] ]
-        self.errorsDown = [ [ float(e) for e in line[3::3] ] for line in self.values[1:] ]
+        self.cols_list = []
+        self.cols = {}
+        self.yields = {}
+        self.errorsUp = {}
+        self.errorsDown = {}
+        self.errors = {}
+        potential_cols = [s.strip() for s in self.values[0][1:]]
+        Npot = len(potential_cols)
+        # print(f'{Npot} potential columns...')
+        # print(potential_cols)
+        for i, col in enumerate(potential_cols):
+            ind = i+1
+            isCol = True
+            if "err" in col:
+                isCol = False
+            if isCol:
+                self.cols_list.append(col)
+                self.cols[col] = ind
+                self.yields[col] = {'ind': ind, 'values': []}
+        for col, ind in self.cols.items():
+            if ind < (Npot - 1):
+                Ncol = potential_cols[ind]
+            if Ncol == col+'err':
+                self.errors[col] = {'ind': ind+1, 'values': []}
+            if ind < (Npot - 2):
+                NNcol = potential_cols[ind+1]
+                if (Ncol == col+'errUp') & (NNcol == col+'errDown'):
+                    self.errorsUp[col] = {'ind': ind+1, 'values': []}
+                    self.errorsDown[col] = {'ind': ind+2, 'values': []}
+
+        # fill all dicts
+        for dict_base in [self.yields, self.errors, self.errorsUp, self.errorsDown]:
+            for col, col_dict in dict_base.items():
+                ind = col_dict['ind']
+                # loop through rows
+                for line in self.values[1:]:
+                    val = float(line[ind])
+                    col_dict['values'].append(val)
+
+        # print(f'cols: {self.cols}')
+        # print(f'yields: {self.yields}')
+        # print(f'errors: {self.errors}')
+        # print(f'errorsUp: {self.errorsUp}')
+        # print(f'errorsDown: {self.errorsDown}')
 
     def nrows(self):
-        return len(self.yields)
+        k = list(self.yields.keys())[0]
+        return len(self.yields[k]['values'])
 
     def ncols(self):
-        return len(self.cols)
+        return len(self.cols.keys())
 
 def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TAB:SOMETHING", needs_resizebox=False):
 
@@ -149,7 +192,7 @@ def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TA
     content_lines = []
     # Process header
     headers = [bin_desc[0]]
-    for col in vvvcsv.cols:
+    for col in vvvcsv.cols_list:
         headers.append(col)
     content_lines.append("    " + " & ".join(headers) + "\\\\\n")
 
@@ -157,9 +200,20 @@ def get_SRMCYield_table(vvvcsv, bin_desc=[], caption="PUTSOMECAPTION", label="TA
 
     for irow in range(vvvcsv.nrows()):
         rowcontents = ["\\pbox{20cm}{ ~ \\\\"+bin_desc[irow+1]+"\\\\ }"]
-        for y, eu, ed in zip(vvvcsv.yields[irow], vvvcsv.errorsUp[irow], vvvcsv.errorsDown[irow]):
-            # print(eu, ed)
-            rowcontents.append(f"${y}  ^{{+{eu}}}_{{-{ed}}}$")
+        for col in vvvcsv.cols_list:
+            if col in vvvcsv.errorsUp.keys():
+                y = vvvcsv.yields[col]['values'][irow]
+                eu = vvvcsv.errorsUp[col]['values'][irow]
+                ed = vvvcsv.errorsDown[col]['values'][irow]
+                rowcontents.append(f"${y}  ^{{+{eu}}}_{{-{ed}}}$")
+            elif col in vvvcsv.errors.keys():
+                y = vvvcsv.yields[col]['values'][irow]
+                e = vvvcsv.errors[col]['values'][irow]
+                rowcontents.append("${} \\pm {}$".format(y, e))
+            else:
+                y = vvvcsv.yields[col]['values'][irow]
+                rowcontents.append("${}$".format(y))
+
         content_lines.append("    " + " & ".join(rowcontents) + "\\\\\n")
     rtnstr += "    \\hline\n".join(content_lines)
 

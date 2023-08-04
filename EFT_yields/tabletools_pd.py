@@ -30,8 +30,9 @@ table_helper_dict = {
 """
 
 class VVV_TeXTable_PD(object):
-    def __init__(self, tablefilepath):
+    def __init__(self, tablefilepath, WC):
         self.tablefilepath = tablefilepath
+        self.WC = WC
         self.load_df(tablefilepath)
 
     def load_df(self, tablefilepath):
@@ -182,6 +183,116 @@ class VVV_TeXTable_PD(object):
         df_coerced.rename(columns=column_subs, inplace=True)
         # save to temporary csv
         df_coerced.to_csv(os.path.join(ddir,'temp_syst.csv'), index=False)
+
+    def coerce_df_to_csv_signal(self, channel, subchannel):
+        WC = self.WC
+        coerced_dict = {'Bin':[]}
+        self.bin_desc = ['Bin [GeV]', 'Inclusive',]
+        # print(self.df.channel.unique())
+        # print(self.df.subchannel.unique())
+        df_ = self.df.query(f'channel=="{channel}" and subchannel=="{subchannel}"')
+        # print(df_)
+        # grab the process names
+        # print(df_.process.unique())
+        df1 = df_.query('bin == 1')
+        #procs = [p for p in df1.process]
+        # print(procs)
+        yield_col_comb = f'all_comb_yield_{WC}_95CL'
+        yield_col_comb_pretty = "\\pbox{20cm}{"+f'VVV \\\\ {WC} @ $95\\%$ CL - SM \\\\ }}'
+        procs = ['sm']
+        cols_all = ['Bin']
+        cols_err = ['Bkg']
+        for p in ['Bkg']+procs+[yield_col_comb]:
+            coerced_dict[f'{p}'] = []
+            cols_all.append(f'{p}')
+            if p in cols_err:
+                coerced_dict[f'{p}err'] = []
+                cols_all.append(f'{p}err')
+        # make the inclusive row
+        coerced_dict['Bin'].append(1)
+        for p in procs:
+            dfp = df_.query(f'process=="{p}"')
+            val = dfp[f'yield'].sum()
+            coerced_dict[f'{p}'].append(f'{val:0.2f}')
+            # this does not end up running, since nothing in "procs" has an error
+            # keep it in case that changes
+            if p in cols_err:
+                eU = dfp[f'syst_quadrature_Up'].values
+                eD = dfp[f'syst_quadrature_Down'].values
+                eUD = (eU + eD) / 2.
+                eS = dfp[f'MCstat'].values
+                eSYST = (np.sum(eUD**2))**(1/2)
+                eSTAT = (np.sum(eS**2))**(1/2)
+                eTOT = (eSYST**2 + eSTAT**2)**(1/2)
+                coerced_dict[f'{p}err'].append(f'{eTOT:0.2f}')
+        # total background
+        dfp = df_
+        val = dfp['yield'].sum()
+        coerced_dict[f'Bkg'].append(f'{val:0.2f}')
+        if 'Bkg' in cols_err:
+            eU = dfp[f'syst_quadrature_Up'].values
+            eD = dfp[f'syst_quadrature_Down'].values
+            eUD = (eU + eD) / 2.
+            eS = dfp[f'MCstat'].values
+            eSYST = (np.sum(eUD**2))**(1/2)
+            eSTAT = (np.sum(eS**2))**(1/2)
+            eTOT = (eSYST**2 + eSTAT**2)**(1/2)
+            coerced_dict[f'Bkgerr'].append(f'{eTOT:0.2f}')
+        # combined yield
+        # need only one row of each bin and want to subtract SMVVV, so query that
+        dfp = df_.query(f'process=="sm"')
+        val = ((dfp[yield_col_comb+'_LL'] + dfp[yield_col_comb+'_UL'])/2. - dfp['yield']).sum()
+        coerced_dict[yield_col_comb].append(f'{val:0.2f}')
+        # loop through each bin
+        for bin_ in df_.bin.unique():
+            df0 = df_.query(f'bin == {bin_}')
+            binlo = df0.iloc[0].bin_low
+            binhi = df0.iloc[0].bin_high
+            self.bin_desc.append(f'${binlo:0.1f}-{binhi:0.1f}$')
+            i = bin_ + 1
+            coerced_dict['Bin'].append(i)
+            for p in procs:
+                dfp = df0.query(f'process=="{p}"').iloc[0]
+                val = dfp[f'yield']
+                coerced_dict[f'{p}'].append(f'{val:0.2f}')
+                if p in cols_err:
+                    eU = dfp[f'syst_quadrature_Up']
+                    eD = dfp[f'syst_quadrature_Down']
+                    eUD = (eU + eD) / 2.
+                    eS = dfp[f'MCstat']
+                    eSYST = eUD
+                    eSTAT = eS
+                    eTOT = (eSYST**2 + eSTAT**2)**(1/2)
+                    coerced_dict[f'{p}err'].append(f'{eTOT:0.2f}')
+            # get Bkg for that bin
+            dfp = df0
+            val = dfp['yield'].sum()
+            coerced_dict[f'Bkg'].append(f'{val:0.2f}')
+            if 'Bkg' in cols_err:
+                eU = dfp[f'syst_quadrature_Up'].values
+                eD = dfp[f'syst_quadrature_Down'].values
+                eUD = (eU + eD) / 2.
+                eS = dfp[f'MCstat'].values
+                eSYST = (np.sum(eUD**2))**(1/2)
+                eSTAT = (np.sum(eS**2))**(1/2)
+                eTOT = (eSYST**2 + eSTAT**2)**(1/2)
+                coerced_dict[f'Bkgerr'].append(f'{eTOT:0.2f}')
+            # get WC yield for that bin
+            dfp = df0.query(f'process=="sm"').iloc[0]
+            val = (dfp[yield_col_comb+'_LL'] + dfp[yield_col_comb+'_UL'])/2. - dfp['yield']
+            coerced_dict[yield_col_comb].append(f'{val:0.2f}')
+        # update final bin to be overflow
+        temp = self.bin_desc[-1].split('-')[0]
+        self.bin_desc[-1] = f'{temp}-$'
+        # print(coerced_dict)
+        df_coerced = pd.DataFrame(coerced_dict)
+        # print(df_coerced)
+        df_coerced = df_coerced[cols_all]
+        # substitute any column names
+        column_subs = {'sm': 'SMVVV', yield_col_comb: yield_col_comb_pretty}
+        df_coerced.rename(columns=column_subs, inplace=True)
+        # save to temporary csv
+        df_coerced.to_csv(os.path.join(ddir,f'temp_signal_{WC}.csv'), index=False)
 
     '''
     def make_table(self, method, caption='This is a caption.', label='tab:atable'):
