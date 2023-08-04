@@ -8,7 +8,8 @@
 |   |-- EFT_yields
 |   |   |-- data
 |   |   |-- output
-|   |   |-- make_tex_table.py
+|   |   |-- make_tables.py (driving script)
+|   |   | ... (supplementary scripts)
 ```
 
 # Instructions
@@ -20,5 +21,5 @@
         b. Optional cmdline args:
         	1. -m (--method) : the method for generating the table: ['default' (default),] --> $TABLEMETHOD
         	2. -w (--WC) : the WC, which will by default be parsed from the CSV filename.
-    3. Find the output .tex in VVVTable/EFT_yields/output/
-    	a. File name will be $CSVFILENAME.$TABLEMETHOD.tex
+    3. Find the output .tex files in VVVTable/EFT_yields/output/
+    	a. File name will be $CSVFILENAME.$TABLEMETHOD$TYPE.tex where $TYPE = "" (backgrounds table), "_syst" (backgrounds table with systematics), "_signal" (table with EFT yields).
