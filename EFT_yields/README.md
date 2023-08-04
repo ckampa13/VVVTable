@@ -23,3 +23,4 @@
         	2. -w (--WC) : the WC, which will by default be parsed from the CSV filename.
     3. Find the output .tex files in VVVTable/EFT_yields/output/
     	a. File name will be $CSVFILENAME.$TABLEMETHOD$TYPE.tex where $TYPE = "" (backgrounds table), "_syst" (backgrounds table with systematics), "_signal" (table with EFT yields).
+    	b. An additional file will be generated to collect the tables into a single document: main_$CSVFILENAME.tex
