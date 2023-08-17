@@ -270,3 +270,26 @@ class VVV_TeXTable_PD(object):
         df_coerced.rename(columns=column_subs, inplace=True)
         # save to temporary csv
         df_coerced.to_csv(os.path.join(ddir,f'temp_signal_{WC}.csv'), index=False)
+
+# for limit summary table
+class VVV_TeXSummaryTable_PD(object):
+    def __init__(self, list_of_VVV_TeXTable_PD):
+        WCs = []
+        LLs = []
+        ULs = []
+        for VVV_TeXTable_PD in list_of_VVV_TeXTable_PD:
+            WC = VVV_TeXTable_PD.WC
+            row = VVV_TeXTable_PD.df.iloc[0]
+            UL_name = f'all_comb_{WC}_95CL_UL'
+            LL_name = f'all_comb_{WC}_95CL_LL'
+            UL = row[UL_name]
+            LL = row[LL_name]
+            WCs.append(WC)
+            ULs.append(f'{UL:0.3f}')
+            LLs.append(f'{LL:0.3f}')
+        self.df = pd.DataFrame({'Wilson Coefficient': WCs, 'LL': LLs, 'UL': ULs})
+        # sort by most sensitive (average)
+        #self.df.eval('lim_mean = (abs(LL) + UL)/2.', inplace=True)
+        self.df.loc[:, 'lim_mean'] = (self.df.loc[:, 'LL'].astype(float).abs() + self.df.loc[:, 'UL'].astype(float))/2.
+        self.df.sort_values(by=['lim_mean'], inplace=True)
+        self.df = self.df[['Wilson Coefficient', 'LL', 'UL']]

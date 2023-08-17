@@ -1,4 +1,4 @@
-def make_main_tex(mainfile, channel_file_list, channel_file_list_syst, channel_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict):
+def make_main_tex(mainfile, texfile_lim_summary, channel_file_list, channel_file_list_syst, channel_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict):
     text = '''\\documentclass[landscape, 12pt,letterpaper]{article}
 \\usepackage[margin=0.5in]{geometry}
 \\usepackage[utf8]{inputenc}
@@ -16,10 +16,14 @@ def make_main_tex(mainfile, channel_file_list, channel_file_list_syst, channel_f
 
 \\newpage
 
-% Adding tables for each channel
-\\section{Background Tables}
+\\section{Limits Summary Table}
 '''
+    # summary
+    text += f'\\input{{{texfile_lim_summary}}}\n'
+    text += '\\newpage\n\n'
 
+    # backgrounds
+    text += '\\section{Background Tables}\n'
     for chan, chan_syst, subsec in zip(channel_file_list, channel_file_list_syst, subsection_list):
         text += f'\\subsection{{{subsec}}}\n'
         text += f"\\input{{{chan}}}\n"

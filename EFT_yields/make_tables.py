@@ -5,7 +5,8 @@ import argparse
 import tabletools
 import tabletools_asymm
 import tabletools_generic
-from tabletools_pd import VVV_TeXTable_PD
+import tabletools_summary
+from tabletools_pd import VVV_TeXTable_PD, VVV_TeXSummaryTable_PD
 from main_tex import make_main_tex
 from WC_ALL import WC_ALL
 
@@ -166,7 +167,26 @@ if __name__=='__main__':
                                                needs_resizebox=resize_signal)
             print()
 
-    # MAKE LIMIT SUMMARY PLOT OUTSIDE THE LOOP
-
+    # limit summary table (out of the loop)
+    print('\n\nLimit Summary Table...')
+    list_of_tables = []
+    for WC in WCs_all:
+        if "WC" in args.filename:
+            filecsv = os.path.join(ddir, args.filename.replace('WC', WC))
+        else:
+            filecsv = os.path.join(ddir, args.filename)
+        myVVVTable = VVV_TeXTable_PD(filecsv, WC)
+        list_of_tables.append(myVVVTable)
+    mySummaryTable = VVV_TeXSummaryTable_PD(list_of_tables)
+    csvfile_lim_summary = os.path.join(ddir, 'temp_summary.csv')
+    texfile_lim_summary_base = 'limit_summary.tex'
+    texfile_lim_summary = os.path.join(odir, texfile_lim_summary_base)
+    mySummaryTable.df.to_csv(csvfile_lim_summary, index=False)
+    # print(mySummaryTable.df)
+    tabletools_summary.convert_csv(csvfile_lim_summary,
+                                   texfile_lim_summary,
+                                   caption=f"Limit summaries for dim-6 Wilson coefficients fit in independent 1-dimensional scans.",
+                                   label=f"tab:limit_summary_1D",
+                                   needs_resizebox=False)
     # after making all tables, make the main file
-    make_main_tex(filetex_main, chan_file_list, chan_file_list_syst, chan_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict)
+    make_main_tex(filetex_main, texfile_lim_summary_base, chan_file_list, chan_file_list_syst, chan_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict)
