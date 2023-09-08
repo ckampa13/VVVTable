@@ -1,13 +1,24 @@
-def make_main_tex(mainfile, texfile_lim_summary, channel_file_list, channel_file_list_syst, channel_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict):
+def make_main_tex(mainfile, texfile_lim_summary, channel_file_list, channel_file_list_syst, channel_file_list_signal_dict, WCs, WC_pretty_print_dict, subsection_list, subsection_signal_dict):
     text = '''\\documentclass[landscape, 12pt,letterpaper]{article}
 \\usepackage[margin=0.5in]{geometry}
 \\usepackage[utf8]{inputenc}
 \\usepackage{rotating}
 \\usepackage{pbox}
+\\usepackage{amssymb}
 
 \\title{CMS VVV Yield Tables\\\\EFT Analysis}
 \\author{}
 \\date{\\today}
+
+'''
+
+    # add in any WC commands
+    for key, dict_ in WC_pretty_print_dict.items():
+        WC_ = dict_['command']
+        WCpret = dict_['tex'].replace("$", "")
+        text += f'\\newcommand{WC_}'+'{\\ensuremath{'+WCpret+'}}\n'
+
+    text += '''
 
 \\begin{document}
 

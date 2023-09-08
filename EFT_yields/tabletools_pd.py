@@ -3,6 +3,9 @@ from string import Template
 import numpy as np
 import pandas as pd
 
+from numerics import round_limit
+from WC_ALL import WC_pretty_print_dict
+
 fpath = os.path.dirname(os.path.realpath(__file__))
 ddir = os.path.abspath(os.path.join(fpath, 'data'))
 
@@ -163,6 +166,7 @@ class VVV_TeXTable_PD(object):
 
     def coerce_df_to_csv_signal(self, channel, subchannel):
         WC = self.WC
+        WC_com = WC_pretty_print_dict[WC]['command']
         coerced_dict = {'Bin':[]}
         self.bin_desc = ['Bin [GeV]', 'Inclusive',]
         # print(self.df.channel.unique())
@@ -175,7 +179,7 @@ class VVV_TeXTable_PD(object):
         #procs = [p for p in df1.process]
         # print(procs)
         yield_col_comb = f'all_comb_yield_{WC}_95CL'
-        yield_col_comb_pretty = "\\pbox{20cm}{"+f'VVV \\\\ {WC} @ $95\\%$ CL - SM \\\\ }}'
+        yield_col_comb_pretty = "\\pbox{20cm}{"+'VVV \\\\ '+WC_com+' @ $95\\%$ CL - SM \\\\ }}'
         procs = ['sm']
         cols_all = ['Bin']
         cols_err = ['Bkg']
@@ -279,17 +283,69 @@ class VVV_TeXSummaryTable_PD(object):
         ULs = []
         for VVV_TeXTable_PD in list_of_VVV_TeXTable_PD:
             WC = VVV_TeXTable_PD.WC
+            WC_com = WC_pretty_print_dict[WC]['command']
             row = VVV_TeXTable_PD.df.iloc[0]
             UL_name = f'all_comb_{WC}_95CL_UL'
             LL_name = f'all_comb_{WC}_95CL_LL'
             UL = row[UL_name]
             LL = row[LL_name]
-            WCs.append(WC)
-            ULs.append(f'{UL:0.3f}')
-            LLs.append(f'{LL:0.3f}')
+            WCs.append(WC_com)
+            #ULs.append(f'{UL:0.3f}')
+            #LLs.append(f'{LL:0.3f}')
+            # better sig fig rounding
+            ULs.append(round_limit(UL, sig_figs=2, special_1_rule=True))
+            LLs.append(round_limit(LL, sig_figs=2, special_1_rule=True))
         self.df = pd.DataFrame({'Wilson Coefficient': WCs, 'LL': LLs, 'UL': ULs})
         # sort by most sensitive (average)
         #self.df.eval('lim_mean = (abs(LL) + UL)/2.', inplace=True)
         self.df.loc[:, 'lim_mean'] = (self.df.loc[:, 'LL'].astype(float).abs() + self.df.loc[:, 'UL'].astype(float))/2.
         self.df.sort_values(by=['lim_mean'], inplace=True)
         self.df = self.df[['Wilson Coefficient', 'LL', 'UL']]
+
+# for final bin summary
+class VVV_TeXFinalBin_PD(object):
+    def __init__(self, list_of_VVV_TeXTable_PD):
+        # first handle backgrounds (using first list entry)
+        df_processed = []
+        self.df = list_of_VVV_TeXTable_PD[0].df
+        for ch in self.df.channel.unique():
+            #print(ch)
+            df_ = self.df.query(f'channel == "{ch}"')
+            for subch in df_.subchannel.unique():
+                #print(subch)
+                df0 = df_.query(f'subchannel == "{subch}"')
+                procs = df0.process.unique()
+                df00 = df0.query(f'process == "{procs[0]}"')
+                max_bin = df00.bin.max()
+                #print(max_bin)
+                df_bin = df00.query(f'bin == {max_bin}')
+                df_processed.append(df_bin)
+        #print(df_processed)
+        self.df = pd.concat(df_processed, ignore_index=True)
+
+
+        '''
+        WCs = []
+        LLs = []
+        ULs = []
+        for VVV_TeXTable_PD in list_of_VVV_TeXTable_PD:
+            WC = VVV_TeXTable_PD.WC
+            WC_com = WC_pretty_print_dict[WC]['command']
+            row = VVV_TeXTable_PD.df.iloc[0]
+            UL_name = f'all_comb_{WC}_95CL_UL'
+            LL_name = f'all_comb_{WC}_95CL_LL'
+            UL = row[UL_name]
+            LL = row[LL_name]
+            WCs.append(WC_com)
+            #ULs.append(f'{UL:0.3f}')
+            #LLs.append(f'{LL:0.3f}')
+            # better sig fig rounding
+            ULs.append(round_limit(UL, sig_figs=2, special_1_rule=True))
+            LLs.append(round_limit(LL, sig_figs=2, special_1_rule=True))
+        self.df = pd.DataFrame({'Wilson Coefficient': WCs, 'LL': LLs, 'UL': ULs})
+        # sort by most sensitive (average)
+        #self.df.eval('lim_mean = (abs(LL) + UL)/2.', inplace=True)
+        self.df.loc[:, 'lim_mean'] = (self.df.loc[:, 'LL'].astype(float).abs() + self.df.loc[:, 'UL'].astype(float))/2.
+        self.df.sort_values(by=['lim_mean'], inplace=True)
+        self.df = self.df[['Wilson Coefficient', 'LL', 'UL']]
+        '''

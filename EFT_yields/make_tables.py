@@ -6,9 +6,9 @@ import tabletools
 import tabletools_asymm
 import tabletools_generic
 import tabletools_summary
-from tabletools_pd import VVV_TeXTable_PD, VVV_TeXSummaryTable_PD
+from tabletools_pd import VVV_TeXTable_PD, VVV_TeXSummaryTable_PD, VVV_TeXFinalBin_PD
 from main_tex import make_main_tex
-from WC_ALL import WC_ALL
+from WC_ALL import WC_ALL, WC_pretty_print_dict
 
 fpath = os.path.dirname(os.path.realpath(__file__))
 # datacard_dir = os.path.abspath(os.path.join(fpath,'..'))
@@ -75,6 +75,15 @@ if __name__=='__main__':
             filecsv = os.path.join(ddir, args.filename)
         myVVVTable = VVV_TeXTable_PD(filecsv, WC)
         VVVTable_dict[WC] = {'table': myVVVTable, 'filecsv': filecsv}
+    # make a special cW table for final bin
+    for WC in ['cW']:
+        if "WC" in args.filename:
+            filecsv = os.path.join(ddir, args.filename.replace('WC', WC))
+        else:
+            filecsv = os.path.join(ddir, args.filename)
+        myVVVTable = VVV_TeXTable_PD(filecsv, WC)
+        #VVVTable_dict[WC] = {'table': myVVVTable, 'filecsv': filecsv}
+
     #     allchannels.append(myVVVTable.df.channel.values)
     #     allsubchannels.append(myVVVTable.df.subchannel.values)
     # allchannels = np.concatenate(allchannels)
@@ -189,4 +198,4 @@ if __name__=='__main__':
                                    label=f"tab:limit_summary_1D",
                                    needs_resizebox=False)
     # after making all tables, make the main file
-    make_main_tex(filetex_main, texfile_lim_summary_base, chan_file_list, chan_file_list_syst, chan_file_list_signal_dict, WCs, subsection_list, subsection_signal_dict)
+    make_main_tex(filetex_main, texfile_lim_summary_base, chan_file_list, chan_file_list_syst, chan_file_list_signal_dict, WCs, WC_pretty_print_dict, subsection_list, subsection_signal_dict)

@@ -100,7 +100,7 @@ class VVVCSV:
         # check_csv_integrity(csvfilepath)
 
     def initialize(self):
-        self.df = pd.read_csv(self.csvfilepath)
+        self.df = pd.read_csv(self.csvfilepath, dtype=str)
 
     def nrows(self):
         return len(self.df)
@@ -156,8 +156,11 @@ def get_limit_summary_table(vvvcsv, caption="PUTSOMECAPTION", label="TAB:SOMETHI
     # Process rows
     for irow in range(vvvcsv.nrows()):
         row = vvvcsv.df.iloc[irow]
-        UL = f"{row['UL']:0.3f}"
-        LL = f"{row['LL']:0.3f}"
+        #UL = f"{row['UL']:0.3f}"
+        #LL = f"{row['LL']:0.3f}"
+        # rounding in a previous step
+        UL = row['UL']
+        LL = row['LL']
         rowcontents = [row[name_col], f'[${LL}$, ${UL}$]']
         # for y, e in zip(vvvcsv.yields[irow], vvvcsv.errors[irow]):
         #     rowcontents.append("${} \\pm {}$".format(y, e))
