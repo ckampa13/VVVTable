@@ -8,7 +8,7 @@ import tabletools_generic
 import tabletools_summary
 from tabletools_pd import VVV_TeXTable_PD, VVV_TeXSummaryTable_PD, VVV_TeXFinalBin_PD
 from main_tex import make_main_tex
-from WC_ALL import WC_ALL, WC_pretty_print_dict
+from WC_ALL import WC_ALL, WC_pretty_print_dict, dim6_ops
 
 fpath = os.path.dirname(os.path.realpath(__file__))
 # datacard_dir = os.path.abspath(os.path.join(fpath,'..'))
@@ -48,6 +48,14 @@ if __name__=='__main__':
             WCs_all = [a.strip() for a in args.WCall.split(',')]
         else:
             WCs_all = [args.WCall.strip()]
+    # make a list of dim6 and dim8
+    WCs_dim6 = []
+    WCs_dim8 = []
+    for WC in WCs_all:
+        if WC in dim6_ops:
+            WCs_dim6.append(WC)
+        else:
+            WCs_dim8.append(WC)
     # check if all CSVs are available
     if "WC" in args.filename:
         avail_csvs = os.listdir(ddir)
@@ -177,9 +185,10 @@ if __name__=='__main__':
             print()
 
     # limit summary table (out of the loop)
-    print('\n\nLimit Summary Table...')
+    # dim6
+    print('\n\nLimit Summary Table (dim6)...')
     list_of_tables = []
-    for WC in WCs_all:
+    for WC in WCs_dim6:
         if "WC" in args.filename:
             filecsv = os.path.join(ddir, args.filename.replace('WC', WC))
         else:
@@ -187,15 +196,36 @@ if __name__=='__main__':
         myVVVTable = VVV_TeXTable_PD(filecsv, WC)
         list_of_tables.append(myVVVTable)
     mySummaryTable = VVV_TeXSummaryTable_PD(list_of_tables)
-    csvfile_lim_summary = os.path.join(ddir, 'temp_summary.csv')
-    texfile_lim_summary_base = 'limit_summary.tex'
-    texfile_lim_summary = os.path.join(odir, texfile_lim_summary_base)
-    mySummaryTable.df.to_csv(csvfile_lim_summary, index=False)
+    csvfile_lim_summary_dim6 = os.path.join(ddir, 'temp_summary_dim6.csv')
+    texfile_lim_summary_base_dim6 = 'limit_summary_dim6.tex'
+    texfile_lim_summary_dim6 = os.path.join(odir, texfile_lim_summary_base_dim6)
+    mySummaryTable.df.to_csv(csvfile_lim_summary_dim6, index=False)
     # print(mySummaryTable.df)
-    tabletools_summary.convert_csv(csvfile_lim_summary,
-                                   texfile_lim_summary,
+    tabletools_summary.convert_csv(csvfile_lim_summary_dim6,
+                                   texfile_lim_summary_dim6,
                                    caption=f"Limit summaries for dim-6 Wilson coefficients fit in independent 1-dimensional scans.",
-                                   label=f"tab:limit_summary_1D",
+                                   label=f"tab:limit_summary_1D_dim6",
+                                   needs_resizebox=False)
+    # dim8
+    print('\n\nLimit Summary Table (dim8...')
+    list_of_tables = []
+    for WC in WCs_dim8:
+        if "WC" in args.filename:
+            filecsv = os.path.join(ddir, args.filename.replace('WC', WC))
+        else:
+            filecsv = os.path.join(ddir, args.filename)
+        myVVVTable = VVV_TeXTable_PD(filecsv, WC)
+        list_of_tables.append(myVVVTable)
+    mySummaryTable = VVV_TeXSummaryTable_PD(list_of_tables)
+    csvfile_lim_summary_dim8 = os.path.join(ddir, 'temp_summary_dim8.csv')
+    texfile_lim_summary_base_dim8 = 'limit_summary_dim8.tex'
+    texfile_lim_summary_dim8 = os.path.join(odir, texfile_lim_summary_base_dim8)
+    mySummaryTable.df.to_csv(csvfile_lim_summary_dim8, index=False)
+    # print(mySummaryTable.df)
+    tabletools_summary.convert_csv(csvfile_lim_summary_dim8,
+                                   texfile_lim_summary_dim8,
+                                   caption=f"Limit summaries for dim-8 Wilson coefficients fit in independent 1-dimensional scans.",
+                                   label=f"tab:limit_summary_1D_dim8",
                                    needs_resizebox=False)
     # after making all tables, make the main file
-    make_main_tex(filetex_main, texfile_lim_summary_base, chan_file_list, chan_file_list_syst, chan_file_list_signal_dict, WCs, WC_pretty_print_dict, subsection_list, subsection_signal_dict)
+    make_main_tex(filetex_main, texfile_lim_summary_base_dim6, texfile_lim_summary_base_dim8, chan_file_list, chan_file_list_syst, chan_file_list_signal_dict, WCs, WC_pretty_print_dict, subsection_list, subsection_signal_dict)
